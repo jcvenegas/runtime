@@ -43,7 +43,7 @@ type testRuntimeConfig struct {
 
 func makeRuntimeConfigFileData(hypervisor, hypervisorPath, kernelPath, imagePath, kernelParams, machineType, shimPath, proxyPath, logPath string, disableBlock bool, blockDeviceDriver string) string {
 	return `
-	# Clear Containers runtime configuration file
+	# Runtime configuration file
 
 	[hypervisor.` + hypervisor + `]
 	path = "` + hypervisorPath + `"
@@ -473,7 +473,7 @@ func TestMinimalRuntimeConfig(t *testing.T) {
 	proxyPath := path.Join(dir, "proxy")
 
 	runtimeMinimalConfig := `
-	# Clear Containers runtime configuration file
+	# Runtime configuration file
 
 	[proxy.kata]
 	path = "` + proxyPath + `"
