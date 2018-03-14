@@ -929,6 +929,9 @@ func TestDefaultBridges(t *testing.T) {
 func TestDefaultFirmware(t *testing.T) {
 	assert := assert.New(t)
 
+	// save default firmware path
+	oldDefaultFirmwarePath := defaultFirmwarePath
+
 	f, err := ioutil.TempFile(os.TempDir(), "qboot.bin")
 	assert.NoError(err)
 	assert.NoError(f.Close())
@@ -944,6 +947,9 @@ func TestDefaultFirmware(t *testing.T) {
 	p, err = h.firmware()
 	assert.NoError(err)
 	assert.NotEmpty(p)
+
+	// restore default firmware path
+	defaultFirmwarePath = oldDefaultFirmwarePath
 }
 
 func TestDefaultMachineAccelerators(t *testing.T) {
