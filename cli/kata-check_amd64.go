@@ -59,7 +59,7 @@ var archRequiredKernelModules = map[string]kernelModule{
 			"nested": "Y",
 			// "VMX Unrestricted mode support". This is used
 			// as a heuristic to determine if the system is
-			// "new enough" to run a Clear Container
+			// "new enough" to run a Kata Container
 			// (atleast a Westmere).
 			"unrestricted_guest": "Y",
 		},
