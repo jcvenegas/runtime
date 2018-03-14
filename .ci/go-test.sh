@@ -1,4 +1,9 @@
-#!/bin/bash -e
+#!/bin/bash
+# Copyright (c) 2018 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -e
 
 script_dir=$(cd `dirname $0`; pwd)
 root_dir=`dirname $script_dir`

@@ -1,4 +1,8 @@
 #!/bin/bash
+# Copyright (c) 2018 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 go_packages=.
 
 candidates=`go list -f '{{.Dir}}/*.go' $go_packages`
