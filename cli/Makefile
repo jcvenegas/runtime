@@ -450,8 +450,8 @@ check-go-test: $(GENERATED_FILES)
 	$(QUIET_TEST)../.ci/go-test.sh
 
 check-go-static:
-	$(QUIET_CHECK).ci/go-static-checks.sh $(GO_STATIC_CHECKS_ARGS)
-	$(QUIET_CHECK).ci/go-no-os-exit.sh
+	$(QUIET_CHECK)../.ci/go-static-checks.sh $(GO_STATIC_CHECKS_ARGS)
+	$(QUIET_CHECK)../.ci/go-no-os-exit.sh
 
 coverage:
 	$(QUIET_TEST).ci/go-test.sh html-coverage
