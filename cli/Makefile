@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+MAKEFILE_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 # Determine the lower-case name of the distro
 distro := $(shell \
 for file in /etc/os-release /usr/lib/os-release; do \
@@ -447,14 +448,14 @@ generate-config: $(CONFIG)
 check: check-go-static check-go-test
 
 check-go-test: $(GENERATED_FILES)
-	$(QUIET_TEST)../.ci/go-test.sh
+	$(QUIET_TEST)$(MAKEFILE_DIR)/../.ci/go-test.sh
 
 check-go-static:
-	$(QUIET_CHECK)../.ci/go-static-checks.sh $(GO_STATIC_CHECKS_ARGS)
-	$(QUIET_CHECK)../.ci/go-no-os-exit.sh
+	$(QUIET_CHECK)$(MAKEFILE_DIR)/../.ci/go-static-checks.sh $(GO_STATIC_CHECKS_ARGS)
+	$(QUIET_CHECK)$(MAKEFILE_DIR)/../.ci/go-no-os-exit.sh
 
 coverage:
-	$(QUIET_TEST).ci/go-test.sh html-coverage
+	$(QUIET_TEST)$(MAKEFILE_DIR)/../.ci/go-test.sh html-coverage
 
 install: default install-scripts
 	$(QUIET_INST)install -D $(TARGET) $(DESTTARGET)
