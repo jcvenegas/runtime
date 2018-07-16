@@ -46,6 +46,8 @@ var (
 	kataGuestSandboxDir   = "/run/kata-containers/sandbox/"
 	type9pFs              = "9p"
 	vsockSocketScheme     = "vsock"
+	vSockDevicePath       = "/dev/vsock"
+	vSockPort             = 1024
 	kata9pDevType         = "9p"
 	kataBlkDevType        = "blk"
 	kataSCSIDevType       = "scsi"
@@ -118,9 +120,16 @@ func parseVSOCKAddr(sock string) (uint32, uint32, error) {
 	return uint32(cid), uint32(port), nil
 }
 
+func supportsVsocks() bool {
+	if _, err := os.Stat(vSockDevicePath); err != nil {
+		return false
+	}
+	return true
+}
+
 func (k *kataAgent) generateVMSocket(sandbox *Sandbox, c KataAgentConfig) error {
-	cid, port, err := parseVSOCKAddr(c.GRPCSocket)
-	if err != nil {
+	if !supportsVsocks() {
+		k.Logger().Debug("agent: Using unix socket form VM socket endpoint")
 		// We need to generate a host UNIX socket path for the emulated serial port.
 		kataSock, err := utils.BuildSocketPath(runStoragePath, sandbox.id, defaultKataSocketName)
 		if err != nil {
@@ -135,10 +144,9 @@ func (k *kataAgent) generateVMSocket(sandbox *Sandbox, c KataAgentConfig) error 
 		}
 	} else {
 		// We want to go through VSOCK. The VM VSOCK endpoint will be our gRPC.
-		k.vmSocket = kataVSOCK{
-			contextID: cid,
-			port:      port,
-		}
+		k.Logger().Debug("agent: Using vsock VM socket endpoint")
+		// We dont know yet the context ID - set empty vsock configuration
+		k.vmSocket = kataVSOCK{}
 	}
 
 	return nil
@@ -203,7 +211,7 @@ func (k *kataAgent) createSandbox(sandbox *Sandbox) error {
 			return err
 		}
 	case kataVSOCK:
-		// TODO Add an hypervisor vsock
+		k.Logger().Debug("Using vSock device will be plugged later")
 	default:
 		return fmt.Errorf("Invalid config type")
 	}
@@ -418,6 +426,18 @@ func (k *kataAgent) generateInterfacesAndRoutes(networkNS NetworkNamespace) ([]*
 	}
 	return ifaces, routes, nil
 }
+func (k *kataAgent) updateContextID(cid uint32) error {
+	switch s := k.vmSocket.(type) {
+	case kataVSOCK:
+		s.contextID = cid
+		s.port = uint32(vSockPort)
+		k.vmSocket = s
+	default:
+		return fmt.Errorf("Invalid socket type")
+	}
+
+	return nil
+}
 
 func (k *kataAgent) startProxy(sandbox *Sandbox) error {
 	if k.proxy == nil {
@@ -426,6 +446,20 @@ func (k *kataAgent) startProxy(sandbox *Sandbox) error {
 
 	if k.proxy.consoleWatched() {
 		return nil
+	}
+
+	if _, ok := k.vmSocket.(kataVSOCK); ok {
+		data, err := sandbox.hypervisor.hotplugAddDevice(nil, vSockDev)
+		if err != nil {
+			return err
+		}
+
+		contextID, ok := data.(uint32)
+		if !ok {
+			return fmt.Errorf("failed to get guest context ID")
+		}
+		sandbox.Logger().Info("Got context ID ", contextID)
+		k.updateContextID(contextID)
 	}
 
 	// Get agent socket path to provide it to the proxy.
@@ -1119,6 +1153,7 @@ func (k *kataAgent) connect() error {
 		return nil
 	}
 
+	k.Logger().Info("New client to URL: ", k.state.URL)
 	client, err := kataclient.NewAgentClient(k.state.URL, k.proxyBuiltIn)
 	if err != nil {
 		return err
