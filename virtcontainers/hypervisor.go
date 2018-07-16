@@ -79,6 +79,9 @@ const (
 
 	// memoryDevice is memory device type
 	memoryDev
+
+	// vSockDev is vsock device  type
+	vSockDev
 )
 
 type memoryDevice struct {

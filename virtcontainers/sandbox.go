@@ -947,6 +947,18 @@ func (s *Sandbox) startVM() error {
 
 	s.Logger().Info("VM started")
 
+	data, err := s.hypervisor.hotplugAddDevice(nil, vSockDev)
+	if err != nil {
+		return err
+	}
+
+	contextID, ok := data.(uint32)
+	if !ok {
+		return fmt.Errorf("failed to get guest context ID")
+	}
+
+	s.Logger().Info("Got context ID", contextID)
+
 	// Once startVM is done, we want to guarantee
 	// that the sandbox is manageable. For that we need
 	// to start the sandbox inside the VM.
