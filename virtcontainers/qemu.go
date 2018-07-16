@@ -68,6 +68,8 @@ const qmpSocket = "qmp.sock"
 
 const defaultConsole = "console.sock"
 
+const hotplugVSockMaxTries = 20
+
 var qemuMajorVersion int
 var qemuMinorVersion int
 
@@ -925,7 +927,15 @@ func (q *qemu) hotplugVSock(op operation) (uint32, error) {
 	return q.hotplugAddVSock()
 }
 
+func findContextID() (uint32, error) {
+	// Fixme
+	return 3, nil
+}
+
 func (q *qemu) hotplugAddVSock() (uint32, error) {
+	var err error
+	var cid uint32
+
 	// setup qmp channel if necessary
 	if q.qmpMonitorCh.qmp == nil {
 		qmp, err := q.qmpSetup()
@@ -940,10 +950,24 @@ func (q *qemu) hotplugAddVSock() (uint32, error) {
 			q.qmpMonitorCh.qmp = nil
 		}()
 	}
-	// TODO: Find a free contextID
-	cid := uint32(3)
 
-	err := q.qmpMonitorCh.qmp.ExecutePCIVSockAdd(q.qmpMonitorCh.ctx, fmt.Sprintf("vsock-id%d", cid), fmt.Sprintf("%d", cid))
+	// ExecutePCIVSockAdd fails if the context ID was used for other process just before
+	// adding the vsock, we have to find other context ID and try again.
+	for i := 0; i < hotplugVSockMaxTries; i++ {
+		q.Logger().Info("Getting ContextID")
+		cid, err = q.findContextID()
+		if err != nil {
+			q.Logger().WithError(err).Error("hotplug vsock")
+			return 0, err
+		}
+
+		err = q.qmpMonitorCh.qmp.ExecutePCIVSockAdd(q.qmpMonitorCh.ctx, fmt.Sprintf("vsock-id%d", cid), fmt.Sprintf("%d", cid))
+		if err == nil {
+			// vsock was hot plugged
+			break
+		}
+	}
+
 	if err != nil {
 		q.Logger().WithError(err).Error("hotplug vsock")
 		return 0, err
