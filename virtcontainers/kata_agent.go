@@ -46,6 +46,7 @@ var (
 	kataGuestSandboxDir   = "/run/kata-containers/sandbox/"
 	type9pFs              = "9p"
 	vsockSocketScheme     = "vsock"
+	vSockDevicePath       = "/dev/vsock"
 	kata9pDevType         = "9p"
 	kataBlkDevType        = "blk"
 	kataSCSIDevType       = "scsi"
@@ -119,8 +120,9 @@ func parseVSOCKAddr(sock string) (uint32, uint32, error) {
 }
 
 func (k *kataAgent) generateVMSocket(sandbox *Sandbox, c KataAgentConfig) error {
-	cid, port, err := parseVSOCKAddr(c.GRPCSocket)
-	if err != nil {
+	k.Logger().Debug("agent: Parsing grpc socket: ", c.GRPCSocket)
+	if _, err := os.Stat(vSockDevicePath); os.IsNotExist(err) {
+		k.Logger().Debug("agent: Using unix socket form VM socket endpoint")
 		// We need to generate a host UNIX socket path for the emulated serial port.
 		kataSock, err := utils.BuildSocketPath(runStoragePath, sandbox.id, defaultKataSocketName)
 		if err != nil {
@@ -135,9 +137,11 @@ func (k *kataAgent) generateVMSocket(sandbox *Sandbox, c KataAgentConfig) error 
 		}
 	} else {
 		// We want to go through VSOCK. The VM VSOCK endpoint will be our gRPC.
+		k.Logger().Debug("agent: Using vsock VM socket endpoint")
+		// FIXME: DONT harcode this
 		k.vmSocket = kataVSOCK{
-			contextID: cid,
-			port:      port,
+			contextID: 3,
+			port:      1024,
 		}
 	}
 
@@ -203,7 +207,7 @@ func (k *kataAgent) createSandbox(sandbox *Sandbox) error {
 			return err
 		}
 	case kataVSOCK:
-		// TODO Add an hypervisor vsock
+		k.Logger().Debug("Using vSock device will be plugged later")
 	default:
 		return fmt.Errorf("Invalid config type")
 	}
@@ -1119,6 +1123,7 @@ func (k *kataAgent) connect() error {
 		return nil
 	}
 
+	k.Logger().Info("New client to URL: ", k.state.URL)
 	client, err := kataclient.NewAgentClient(k.state.URL, k.proxyBuiltIn)
 	if err != nil {
 		return err
