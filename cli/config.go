@@ -20,7 +20,7 @@ import (
 
 const (
 	defaultHypervisor = vc.QemuHypervisor
-	defaultProxy      = vc.KataProxyType
+	defaultProxy      = vc.NoProxyType
 	defaultShim       = vc.KataShimType
 	defaultAgent      = vc.KataContainersAgent
 )
