@@ -446,6 +446,7 @@ func (q *qemu) waitSandbox(timeout int) error {
 	defer func(qemu *qemu) {
 		if q.qmpMonitorCh.qmp != nil {
 			q.qmpMonitorCh.qmp.Shutdown()
+			q.qmpMonitorCh.qmp = nil
 		}
 	}(q)
 
@@ -725,6 +726,8 @@ func (q *qemu) hotplugDevice(devInfo interface{}, devType deviceType, op operati
 	case memoryDev:
 		memdev := devInfo.(*memoryDevice)
 		return nil, q.hotplugMemory(memdev, op)
+	case vSockDev:
+		return q.hotplugVSock(op)
 	default:
 		return nil, fmt.Errorf("cannot hotplug device: unsupported device type '%v'", devType)
 	}
@@ -912,6 +915,41 @@ func (q *qemu) hotplugAddMemory(memDev *memoryDevice) error {
 
 	q.state.HotpluggedMemory += memDev.sizeMB
 	return q.sandbox.storage.storeHypervisorState(q.sandbox.id, q.state)
+}
+
+func (q *qemu) hotplugVSock(op operation) (uint32, error) {
+	if op == removeDevice {
+		return 0, errors.New("Not implemented")
+	}
+
+	return q.hotplugAddVSock()
+}
+
+func (q *qemu) hotplugAddVSock() (uint32, error) {
+	// setup qmp channel if necessary
+	if q.qmpMonitorCh.qmp == nil {
+		qmp, err := q.qmpSetup()
+		if err != nil {
+			return 0, err
+		}
+
+		q.qmpMonitorCh.qmp = qmp
+
+		defer func() {
+			qmp.Shutdown()
+			q.qmpMonitorCh.qmp = nil
+		}()
+	}
+	// TODO: Find a free contextID
+	cid := uint32(3)
+
+	err := q.qmpMonitorCh.qmp.ExecutePCIVSockAdd(q.qmpMonitorCh.ctx, fmt.Sprintf("vsock-id%d", cid), fmt.Sprintf("%d", cid))
+	if err != nil {
+		q.Logger().WithError(err).Error("hotplug vsock")
+		return 0, err
+	}
+
+	return cid, q.sandbox.storage.storeHypervisorState(q.sandbox.id, q.state)
 }
 
 func (q *qemu) pauseSandbox() error {
