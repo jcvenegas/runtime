@@ -925,6 +925,11 @@ func (q *qemu) hotplugVSock(op operation) (uint32, error) {
 	return q.hotplugAddVSock()
 }
 
+func findContextID() (uint32, error) {
+	// Fixme
+	return 3, nil
+}
+
 func (q *qemu) hotplugAddVSock() (uint32, error) {
 	// setup qmp channel if necessary
 	if q.qmpMonitorCh.qmp == nil {
@@ -940,10 +945,15 @@ func (q *qemu) hotplugAddVSock() (uint32, error) {
 			q.qmpMonitorCh.qmp = nil
 		}()
 	}
-	// TODO: Find a free contextID
-	cid := uint32(3)
 
-	err := q.qmpMonitorCh.qmp.ExecutePCIVSockAdd(q.qmpMonitorCh.ctx, fmt.Sprintf("vsock-id%d", cid), fmt.Sprintf("%d", cid))
+	q.Logger().Info("Getting ContextID")
+	cid, err := findContextID()
+	if err != nil {
+		q.Logger().WithError(err).Error("hotplug vsock")
+		return 0, err
+	}
+
+	err = q.qmpMonitorCh.qmp.ExecutePCIVSockAdd(q.qmpMonitorCh.ctx, fmt.Sprintf("vsock-id%d", cid), fmt.Sprintf("%d", cid))
 	if err != nil {
 		q.Logger().WithError(err).Error("hotplug vsock")
 		return 0, err
