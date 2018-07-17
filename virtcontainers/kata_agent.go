@@ -47,6 +47,7 @@ var (
 	type9pFs              = "9p"
 	vsockSocketScheme     = "vsock"
 	vSockDevicePath       = "/dev/vsock"
+	vHostVSockDevicePath  = "/dev/vhost-vsock"
 	vSockPort             = 1024
 	kata9pDevType         = "9p"
 	kataBlkDevType        = "blk"
@@ -124,6 +125,11 @@ func supportsVsocks() bool {
 	if _, err := os.Stat(vSockDevicePath); err != nil {
 		return false
 	}
+
+	if _, err := os.Stat(vHostVSockDevicePath); err != nil {
+		return false
+	}
+
 	return true
 }
 
