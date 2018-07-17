@@ -80,6 +80,7 @@ type HypervisorInfo struct {
 	BlockDeviceDriver string
 	Msize9p           uint32
 	Debug             bool
+	UseVSOCK          bool
 }
 
 // ProxyInfo stores proxy details
@@ -212,6 +213,10 @@ func getHostInfo() (HostInfo, error) {
 }
 
 func getProxyInfo(config oci.RuntimeConfig) (ProxyInfo, error) {
+	if config.ProxyType == vc.NoProxyType {
+		return ProxyInfo{Type: string(config.ProxyType)}, nil
+	}
+
 	version, err := getCommandVersion(defaultProxyPath)
 	if err != nil {
 		version = unknown
@@ -276,6 +281,7 @@ func getHypervisorInfo(config oci.RuntimeConfig) HypervisorInfo {
 		Path:              hypervisorPath,
 		BlockDeviceDriver: config.HypervisorConfig.BlockDeviceDriver,
 		Msize9p:           config.HypervisorConfig.Msize9p,
+		UseVSOCK:          config.HypervisorConfig.UseVSOCK,
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/BurntSushi/toml"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
+	"github.com/kata-containers/runtime/virtcontainers/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -86,6 +87,7 @@ type hypervisor struct {
 	Debug                 bool   `toml:"enable_debug"`
 	DisableNestingChecks  bool   `toml:"disable_nesting_checks"`
 	EnableIOThreads       bool   `toml:"enable_iothreads"`
+	UseVSOCK              bool   `toml:"use_vsock"`
 }
 
 type proxy struct {
@@ -262,6 +264,10 @@ func (h hypervisor) msize9p() uint32 {
 	return h.Msize9p
 }
 
+func (h hypervisor) useVSOCK() bool {
+	return h.UseVSOCK
+}
+
 func (p proxy) path() string {
 	if p.Path == "" {
 		return defaultProxyPath
@@ -328,6 +334,12 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		return vc.HypervisorConfig{}, err
 	}
 
+	useVSOCK := false
+	if h.useVSOCK() && utils.SupportsVsocks() {
+		kataLog.Info("vsock supported")
+		useVSOCK = true
+	}
+
 	return vc.HypervisorConfig{
 		HypervisorPath:        hypervisor,
 		KernelPath:            kernel,
@@ -350,6 +362,7 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		BlockDeviceDriver:     blockDriver,
 		EnableIOThreads:       h.EnableIOThreads,
 		Msize9p:               h.msize9p(),
+		UseVSOCK:              useVSOCK,
 	}, nil
 }
 
@@ -403,7 +416,6 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 		case kataAgentTableType:
 			config.AgentType = kataAgentTableType
 			config.AgentConfig = vc.KataAgentConfig{}
-
 		}
 	}
 
@@ -421,6 +433,12 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 		}
 
 		config.ShimConfig = shConfig
+	}
+
+	if config.HypervisorConfig.UseVSOCK {
+		kataLog.Info("VSOCK supported, configure to not use proxy")
+		config.ProxyType = vc.NoProxyType
+		config.ProxyConfig = vc.ProxyConfig{}
 	}
 
 	return nil
