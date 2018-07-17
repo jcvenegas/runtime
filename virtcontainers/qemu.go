@@ -960,7 +960,7 @@ func (q *qemu) findContextID() (uint32, error) {
 		return nil
 	}
 
-	vsockFd, err := os.Open(vHostVSockDevicePath)
+	vsockFd, err := os.Open(utils.VHostVSockDevicePath)
 	if err != nil {
 		return 0, err
 	}

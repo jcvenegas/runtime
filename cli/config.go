@@ -15,12 +15,13 @@ import (
 	"github.com/BurntSushi/toml"
 	vc "github.com/kata-containers/runtime/virtcontainers"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/oci"
+	"github.com/kata-containers/runtime/virtcontainers/utils"
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	defaultHypervisor = vc.QemuHypervisor
-	defaultProxy      = vc.NoProxyType
+	defaultProxy      = vc.KataProxyType
 	defaultShim       = vc.KataShimType
 	defaultAgent      = vc.KataContainersAgent
 )
@@ -89,8 +90,9 @@ type hypervisor struct {
 }
 
 type proxy struct {
-	Path  string `toml:"path"`
-	Debug bool   `toml:"enable_debug"`
+	Path     string `toml:"path"`
+	Debug    bool   `toml:"enable_debug"`
+	UseVSOCK bool   `toml:"use_vsock"`
 }
 
 type runtime struct {
@@ -270,6 +272,10 @@ func (p proxy) path() string {
 	return p.Path
 }
 
+func (p proxy) useVSOCK() bool {
+	return p.UseVSOCK
+}
+
 func (p proxy) debug() bool {
 	return p.Debug
 }
@@ -366,6 +372,9 @@ func newShimConfig(s shim) (vc.ShimConfig, error) {
 }
 
 func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.RuntimeConfig) error {
+
+	useVSOCK := false
+
 	for k, hypervisor := range tomlConf.Hypervisor {
 		switch k {
 		case qemuHypervisorTableType:
@@ -381,6 +390,13 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 	}
 
 	for k, proxy := range tomlConf.Proxy {
+		if useVSOCK = proxy.useVSOCK(); useVSOCK && utils.SupportsVsocks() {
+			config.ProxyType = vc.NoProxyType
+			config.ProxyConfig = vc.ProxyConfig{
+				UseVSOCK: proxy.useVSOCK(),
+			}
+			continue
+		}
 		switch k {
 		case ccProxyTableType:
 			config.ProxyType = vc.CCProxyType
@@ -389,8 +405,9 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 		}
 
 		config.ProxyConfig = vc.ProxyConfig{
-			Path:  proxy.path(),
-			Debug: proxy.debug(),
+			Path:     proxy.path(),
+			Debug:    proxy.debug(),
+			UseVSOCK: proxy.useVSOCK(),
 		}
 	}
 
@@ -402,8 +419,7 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 
 		case kataAgentTableType:
 			config.AgentType = kataAgentTableType
-			config.AgentConfig = vc.KataAgentConfig{}
-
+			config.AgentConfig = vc.KataAgentConfig{UseVSOCK: useVSOCK}
 		}
 	}
 

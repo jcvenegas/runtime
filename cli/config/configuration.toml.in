@@ -140,6 +140,9 @@ path = "@PROXYPATH@"
 # If enabled, proxy messages will be sent to the system log
 # (default: disabled)
 #enable_debug = true
+# If enabled, in case of vsock support wont use a proxy
+# (default: disabled)
+#use_vsock = true
 
 [shim.@PROJECT_TYPE@]
 path = "@SHIMPATH@"

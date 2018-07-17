@@ -84,10 +84,11 @@ type HypervisorInfo struct {
 
 // ProxyInfo stores proxy details
 type ProxyInfo struct {
-	Type    string
-	Version string
-	Path    string
-	Debug   bool
+	Type     string
+	Version  string
+	Path     string
+	Debug    bool
+	UseVSOCK bool
 }
 
 // ShimInfo stores shim details
@@ -218,10 +219,11 @@ func getProxyInfo(config oci.RuntimeConfig) (ProxyInfo, error) {
 	}
 
 	proxy := ProxyInfo{
-		Type:    string(config.ProxyType),
-		Version: version,
-		Path:    config.ProxyConfig.Path,
-		Debug:   config.ProxyConfig.Debug,
+		Type:     string(config.ProxyType),
+		Version:  version,
+		Path:     config.ProxyConfig.Path,
+		Debug:    config.ProxyConfig.Debug,
+		UseVSOCK: config.ProxyConfig.UseVSOCK,
 	}
 
 	return proxy, nil

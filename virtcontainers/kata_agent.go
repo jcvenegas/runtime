@@ -46,8 +46,6 @@ var (
 	kataGuestSandboxDir   = "/run/kata-containers/sandbox/"
 	type9pFs              = "9p"
 	vsockSocketScheme     = "vsock"
-	vSockDevicePath       = "/dev/vsock"
-	vHostVSockDevicePath  = "/dev/vhost-vsock"
 	vSockPort             = 1024
 	kata9pDevType         = "9p"
 	kataBlkDevType        = "blk"
@@ -62,6 +60,7 @@ var (
 type KataAgentConfig struct {
 	GRPCSocket   string
 	LongLiveConn bool
+	UseVSOCK     bool
 }
 
 type kataVSOCK struct {
@@ -121,21 +120,9 @@ func parseVSOCKAddr(sock string) (uint32, uint32, error) {
 	return uint32(cid), uint32(port), nil
 }
 
-func supportsVsocks() bool {
-	if _, err := os.Stat(vSockDevicePath); err != nil {
-		return false
-	}
-
-	if _, err := os.Stat(vHostVSockDevicePath); err != nil {
-		return false
-	}
-
-	return true
-}
-
 func (k *kataAgent) generateVMSocket(sandbox *Sandbox, c KataAgentConfig) error {
 	k.Logger().Debug("agent: Parsing grpc socket: ", c.GRPCSocket)
-	if !supportsVsocks() {
+	if !c.UseVSOCK {
 		k.Logger().Debug("agent: Using unix socket form VM socket endpoint")
 		// We need to generate a host UNIX socket path for the emulated serial port.
 		kataSock, err := utils.BuildSocketPath(runStoragePath, sandbox.id, defaultKataSocketName)
