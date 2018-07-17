@@ -936,7 +936,7 @@ func (q *qemu) hotplugVSock(op operation) (uint32, error) {
 	return q.hotplugAddVSock()
 }
 
-func findContextID() (uint32, error) {
+func (q *qemu) findContextID() (uint32, error) {
 	var firstContextID uint32 = 3
 	var maxUInt uint32 = 1<<32 - 1
 	var contextID = firstContextID
@@ -953,7 +953,9 @@ func findContextID() (uint32, error) {
 			uintptr(unsafe.Pointer(&cid)),
 		)
 		if errno != 0 {
-			return os.NewSyscallError("ioctl", fmt.Errorf("%d", int(errno)))
+			err = os.NewSyscallError("ioctl", fmt.Errorf("%d", int(errno)))
+			q.Logger().WithError(err).Errorf("Context ID %d is not available", cid)
+			return err
 		}
 		return nil
 	}
@@ -996,7 +998,7 @@ func (q *qemu) hotplugAddVSock() (uint32, error) {
 	}
 
 	q.Logger().Info("Getting ContextID")
-	cid, err := findContextID()
+	cid, err := q.findContextID()
 	if err != nil {
 		q.Logger().WithError(err).Error("hotplug vsock")
 		return 0, err
