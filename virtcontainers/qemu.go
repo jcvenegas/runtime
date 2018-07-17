@@ -5,19 +5,30 @@
 
 package virtcontainers
 
+/*
+#include <linux/vhost.h>
+
+const int ioctl_VHOST_VSOCK_SET_GUEST_CID = VHOST_VSOCK_SET_GUEST_CID;
+*/
+import "C"
+
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	govmmQemu "github.com/intel/govmm/qemu"
 	"github.com/kata-containers/runtime/virtcontainers/pkg/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/kata-containers/runtime/virtcontainers/device/api"
 	deviceDrivers "github.com/kata-containers/runtime/virtcontainers/device/drivers"
@@ -925,9 +936,49 @@ func (q *qemu) hotplugVSock(op operation) (uint32, error) {
 	return q.hotplugAddVSock()
 }
 
-func findContextID() (uint32, error) {
-	// Fixme
-	return 3, nil
+func (q *qemu) findContextID() (uint32, error) {
+	var firstContextID uint32 = 3
+	var maxUInt uint32 = 1<<32 - 1
+	var contextID = firstContextID
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(maxUInt)))
+	if err == nil && n.Int64() >= int64(firstContextID) {
+		contextID = uint32(n.Int64())
+	}
+
+	ioctlVSockFunc := func(fd uintptr, cid uint32) error {
+		_, _, errno := unix.Syscall(
+			unix.SYS_IOCTL,
+			fd,
+			uintptr(int(C.ioctl_VHOST_VSOCK_SET_GUEST_CID)),
+			uintptr(unsafe.Pointer(&cid)),
+		)
+		if errno != 0 {
+			err = os.NewSyscallError("ioctl", fmt.Errorf("%d", int(errno)))
+			q.Logger().WithError(err).Errorf("Context ID %d is not available", cid)
+			return err
+		}
+		return nil
+	}
+
+	vsockFd, err := os.Open(vHostVSockDevicePath)
+	if err != nil {
+		return 0, err
+	}
+	defer vsockFd.Close()
+
+	for cid := contextID; cid <= maxUInt; cid++ {
+		if err := ioctlVSockFunc(vsockFd.Fd(), cid); err == nil {
+			return cid, nil
+		}
+	}
+
+	for cid := contextID - 1; cid >= firstContextID; cid-- {
+		if err := ioctlVSockFunc(vsockFd.Fd(), cid); err == nil {
+			return cid, nil
+		}
+	}
+
+	return 0, fmt.Errorf("Could not get a unique context ID for the vsock")
 }
 
 func (q *qemu) hotplugAddVSock() (uint32, error) {
@@ -947,7 +998,7 @@ func (q *qemu) hotplugAddVSock() (uint32, error) {
 	}
 
 	q.Logger().Info("Getting ContextID")
-	cid, err := findContextID()
+	cid, err := q.findContextID()
 	if err != nil {
 		q.Logger().WithError(err).Error("hotplug vsock")
 		return 0, err
