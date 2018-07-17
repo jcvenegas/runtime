@@ -449,7 +449,7 @@ func (k *kataAgent) startProxy(sandbox *Sandbox) error {
 		return nil
 	}
 
-	if supportsVsocks() {
+	if _, ok := k.vmSocket.(kataVSOCK); ok {
 		data, err := sandbox.hypervisor.hotplugAddDevice(nil, vSockDev)
 		if err != nil {
 			return err
