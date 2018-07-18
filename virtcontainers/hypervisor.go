@@ -79,6 +79,9 @@ const (
 
 	// memoryDevice is memory device type
 	memoryDev
+
+	// vSockDev is vsock device  type
+	vSockDev
 )
 
 type memoryDevice struct {
@@ -216,6 +219,9 @@ type HypervisorConfig struct {
 
 	// Msize9p is used as the msize for 9p shares
 	Msize9p uint32
+
+	// UseVSOCK use a vsock for agent communication
+	UseVSOCK bool
 }
 
 func (conf *HypervisorConfig) valid() (bool, error) {
