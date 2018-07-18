@@ -373,8 +373,6 @@ func newShimConfig(s shim) (vc.ShimConfig, error) {
 
 func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.RuntimeConfig) error {
 
-	useVSOCK := false
-
 	for k, hypervisor := range tomlConf.Hypervisor {
 		switch k {
 		case qemuHypervisorTableType:
@@ -390,7 +388,19 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 	}
 
 	for k, proxy := range tomlConf.Proxy {
-		if useVSOCK = proxy.useVSOCK(); useVSOCK && utils.SupportsVsocks() {
+		vsockSupported := utils.SupportsVsocks()
+
+		if vsockSupported {
+			kataLog.Info("vsock supported")
+		}
+
+		useVSOCK := proxy.useVSOCK()
+		if useVSOCK {
+			kataLog.Info("Enabled use vsock when possible")
+		}
+
+		if useVSOCK && vsockSupported {
+			kataLog.Info("Configured to not use proxy")
 			config.ProxyType = vc.NoProxyType
 			config.ProxyConfig = vc.ProxyConfig{
 				UseVSOCK: proxy.useVSOCK(),
