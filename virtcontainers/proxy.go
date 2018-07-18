@@ -16,9 +16,8 @@ import (
 // ProxyConfig is a structure storing information needed from any
 // proxy in order to be properly initialized.
 type ProxyConfig struct {
-	Path     string
-	Debug    bool
-	UseVSOCK bool
+	Path  string
+	Debug bool
 }
 
 // proxyParams is the structure providing specific parameters needed

@@ -87,12 +87,12 @@ type hypervisor struct {
 	Debug                 bool   `toml:"enable_debug"`
 	DisableNestingChecks  bool   `toml:"disable_nesting_checks"`
 	EnableIOThreads       bool   `toml:"enable_iothreads"`
+	UseVSOCK              bool   `toml:"use_vsock"`
 }
 
 type proxy struct {
-	Path     string `toml:"path"`
-	Debug    bool   `toml:"enable_debug"`
-	UseVSOCK bool   `toml:"use_vsock"`
+	Path  string `toml:"path"`
+	Debug bool   `toml:"enable_debug"`
 }
 
 type runtime struct {
@@ -264,16 +264,16 @@ func (h hypervisor) msize9p() uint32 {
 	return h.Msize9p
 }
 
+func (h hypervisor) useVSOCK() bool {
+	return h.UseVSOCK
+}
+
 func (p proxy) path() string {
 	if p.Path == "" {
 		return defaultProxyPath
 	}
 
 	return p.Path
-}
-
-func (p proxy) useVSOCK() bool {
-	return p.UseVSOCK
 }
 
 func (p proxy) debug() bool {
@@ -333,6 +333,13 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 	if err != nil {
 		return vc.HypervisorConfig{}, err
 	}
+	useVSOCK := false
+	if h.useVSOCK() && utils.SupportsVsocks() {
+		kataLog.Info("vsock supported")
+		useVSOCK = true
+	} else {
+		useVSOCK = false
+	}
 
 	return vc.HypervisorConfig{
 		HypervisorPath:        hypervisor,
@@ -356,6 +363,7 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		BlockDeviceDriver:     blockDriver,
 		EnableIOThreads:       h.EnableIOThreads,
 		Msize9p:               h.msize9p(),
+		UseVSOCK:              useVSOCK,
 	}, nil
 }
 
@@ -388,25 +396,7 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 	}
 
 	for k, proxy := range tomlConf.Proxy {
-		vsockSupported := utils.SupportsVsocks()
 
-		if vsockSupported {
-			kataLog.Info("vsock supported")
-		}
-
-		useVSOCK := proxy.useVSOCK()
-		if useVSOCK {
-			kataLog.Info("Enabled use vsock when possible")
-		}
-
-		if useVSOCK && vsockSupported {
-			kataLog.Info("Configured to not use proxy")
-			config.ProxyType = vc.NoProxyType
-			config.ProxyConfig = vc.ProxyConfig{
-				UseVSOCK: proxy.useVSOCK(),
-			}
-			continue
-		}
 		switch k {
 		case ccProxyTableType:
 			config.ProxyType = vc.CCProxyType
@@ -415,9 +405,8 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 		}
 
 		config.ProxyConfig = vc.ProxyConfig{
-			Path:     proxy.path(),
-			Debug:    proxy.debug(),
-			UseVSOCK: proxy.useVSOCK(),
+			Path:  proxy.path(),
+			Debug: proxy.debug(),
 		}
 	}
 
@@ -447,6 +436,12 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 		}
 
 		config.ShimConfig = shConfig
+	}
+
+	if config.HypervisorConfig.UseVSOCK {
+		kataLog.Info("VSOCK supported, configure to not use proxy")
+		config.ProxyType = vc.NoProxyType
+		config.ProxyConfig = vc.ProxyConfig{}
 	}
 
 	return nil

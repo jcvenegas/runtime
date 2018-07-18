@@ -134,15 +134,16 @@ enable_iothreads = @DEFENABLEIOTHREADS@
 # used for 9p packet payload.
 #msize_9p = @DEFMSIZE9P@
 
+# If enabled, in case of vsock support wont use a proxy
+# (default: disabled)
+#use_vsock = true
+
 [proxy.@PROJECT_TYPE@]
 path = "@PROXYPATH@"
 
 # If enabled, proxy messages will be sent to the system log
 # (default: disabled)
 #enable_debug = true
-# If enabled, in case of vsock support wont use a proxy
-# (default: disabled)
-#use_vsock = true
 
 [shim.@PROJECT_TYPE@]
 path = "@SHIMPATH@"
