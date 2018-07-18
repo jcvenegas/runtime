@@ -418,18 +418,6 @@ func (k *kataAgent) generateInterfacesAndRoutes(networkNS NetworkNamespace) ([]*
 	}
 	return ifaces, routes, nil
 }
-func (k *kataAgent) updateContextID(cid uint32) error {
-	switch s := k.vmSocket.(type) {
-	case kataVSOCK:
-		s.contextID = cid
-		s.port = uint32(vSockPort)
-		k.vmSocket = s
-	default:
-		return fmt.Errorf("Invalid socket type")
-	}
-
-	return nil
-}
 
 func (k *kataAgent) startProxy(sandbox *Sandbox) error {
 	if k.proxy == nil {
@@ -440,7 +428,7 @@ func (k *kataAgent) startProxy(sandbox *Sandbox) error {
 		return nil
 	}
 
-	if _, ok := k.vmSocket.(kataVSOCK); ok {
+	if s, ok := k.vmSocket.(kataVSOCK); ok {
 		data, err := sandbox.hypervisor.hotplugAddDevice(nil, vSockDev)
 		if err != nil {
 			return err
@@ -451,7 +439,9 @@ func (k *kataAgent) startProxy(sandbox *Sandbox) error {
 			return fmt.Errorf("failed to get guest context ID")
 		}
 		sandbox.Logger().Info("Got context ID ", contextID)
-		k.updateContextID(contextID)
+		s.contextID = contextID
+		s.port = uint32(vSockPort)
+		k.vmSocket = s
 	}
 
 	// Get agent socket path to provide it to the proxy.
