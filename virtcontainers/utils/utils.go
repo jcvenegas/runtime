@@ -23,6 +23,9 @@ const fileMode0755 = os.FileMode(0755)
 // See unix(7).
 const MaxSocketPathLen = 107
 
+const VSockDevicePath = "/dev/vsock"
+const VHostVSockDevicePath = "/dev/vhost-vsock"
+
 // FileCopy copys files from srcPath to dstPath
 func FileCopy(srcPath, dstPath string) error {
 	if srcPath == "" {
@@ -199,4 +202,16 @@ func BuildSocketPath(elements ...string) (string, error) {
 	}
 
 	return result, nil
+}
+
+func SupportsVsocks() bool {
+	if _, err := os.Stat(VSockDevicePath); err != nil {
+		return false
+	}
+
+	if _, err := os.Stat(VHostVSockDevicePath); err != nil {
+		return false
+	}
+
+	return true
 }

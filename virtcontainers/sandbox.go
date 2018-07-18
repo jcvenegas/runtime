@@ -941,12 +941,6 @@ func (s *Sandbox) startVM() error {
 		return err
 	}
 
-	if err := s.hypervisor.waitSandbox(vmStartTimeout); err != nil {
-		return err
-	}
-
-	s.Logger().Info("VM started")
-
 	// Once startVM is done, we want to guarantee
 	// that the sandbox is manageable. For that we need
 	// to start the sandbox inside the VM.
