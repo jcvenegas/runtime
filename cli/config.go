@@ -419,7 +419,7 @@ func updateRuntimeConfig(configPath string, tomlConf tomlConfig, config *oci.Run
 
 		case kataAgentTableType:
 			config.AgentType = kataAgentTableType
-			config.AgentConfig = vc.KataAgentConfig{UseVSOCK: useVSOCK}
+			config.AgentConfig = vc.KataAgentConfig{}
 		}
 	}
 
