@@ -954,7 +954,7 @@ func (q *qemu) findContextID() (uint32, error) {
 		)
 		if errno != 0 {
 			err = os.NewSyscallError("ioctl", fmt.Errorf("%d", int(errno)))
-			q.Logger().WithError(err).Errorf("Context ID %d is not available", cid)
+			q.Logger().WithError(err).Debugf("Context ID %d is not available", cid)
 			return err
 		}
 		return nil
