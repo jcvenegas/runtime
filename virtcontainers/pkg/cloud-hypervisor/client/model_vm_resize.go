@@ -8,8 +8,7 @@
  */
 
 package openapi
-// CpuConfig struct for CpuConfig
-type CpuConfig struct {
-	BootVcpus int32 `json:"boot_vcpus"`
-	MaxVcpus int32 `json:"max_vcpus"`
+// VmResize struct for VmResize
+type VmResize struct {
+	DesiredVcpus int32 `json:"desired_vcpus"`
 }
