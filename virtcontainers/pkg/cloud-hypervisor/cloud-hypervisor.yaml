@@ -313,8 +313,6 @@ components:
       required:
       - tag
       - sock
-      - num_queues
-      - queue_size
       type: object
       properties:
         tag:

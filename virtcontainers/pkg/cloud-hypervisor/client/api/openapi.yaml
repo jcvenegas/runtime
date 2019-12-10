@@ -524,8 +524,6 @@ components:
           format: int64
           type: integer
       required:
-      - num_queues
-      - queue_size
       - sock
       - tag
       type: object
