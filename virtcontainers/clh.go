@@ -178,7 +178,8 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 	// Set initial amount of cpu's for the virtual machine
 	clh.vmconfig.Cpus = chclient.CpuConfig{
 		// cast to int32, as openAPI has a limitation that it does not support unsigned values
-		CpuCount: int32(clh.config.NumVCPUs),
+		BootVcpus: int32(clh.config.NumVCPUs),
+		MaxVcpus:  int32(clh.config.DefaultMaxVCPUs),
 	}
 
 	// Add the kernel path
