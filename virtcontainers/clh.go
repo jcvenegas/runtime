@@ -1038,12 +1038,7 @@ func (clh *cloudHypervisor) addNet(e Endpoint) {
 		"tap": tapPath,
 	}).Info("Adding Net")
 
-	// FIXME: This is required by CH
-	// remove after PR is merged:
-	// https://github.com/cloud-hypervisor/cloud-hypervisor/pull/480
-	ip := "0.0.0.0"
-	mask := "0.0.0.0"
-	clh.vmconfig.Net = append(clh.vmconfig.Net, chclient.NetConfig{Mac: mac, Tap: tapPath, Ip: ip, Mask: mask})
+	clh.vmconfig.Net = append(clh.vmconfig.Net, chclient.NetConfig{Mac: mac, Tap: tapPath})
 }
 
 // Add shared Volume using virtiofs
