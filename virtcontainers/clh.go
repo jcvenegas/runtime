@@ -1063,17 +1063,13 @@ func (clh *cloudHypervisor) addVolume(volume types.Volume) error {
 				Tag:       volume.MountTag,
 				CacheSize: int64(clh.config.VirtioFSCacheSize << 20),
 				Sock:      vfsdSockPath,
-				NumQueues: clhFsQueues,
-				QueueSize: clhFsQueueSize,
 			},
 		}
 	} else {
 		clh.vmconfig.Fs = []chclient.FsConfig{
 			{
-				Tag:       volume.MountTag,
-				Sock:      vfsdSockPath,
-				NumQueues: clhFsQueues,
-				QueueSize: clhFsQueueSize,
+				Tag:  volume.MountTag,
+				Sock: vfsdSockPath,
 			},
 		}
 
