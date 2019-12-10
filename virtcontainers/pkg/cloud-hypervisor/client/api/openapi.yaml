@@ -229,12 +229,12 @@ components:
             iommu: false
           net:
           - tap: tap
-            iommu: false
+            iommu: true
             ip: ip
             mac: mac
             mask: mask
           - tap: tap
-            iommu: false
+            iommu: true
             ip: ip
             mac: mac
             mask: mask
@@ -338,12 +338,12 @@ components:
           iommu: false
         net:
         - tap: tap
-          iommu: false
+          iommu: true
           ip: ip
           mac: mac
           mask: mask
         - tap: tap
-          iommu: false
+          iommu: true
           ip: ip
           mac: mac
           mask: mask
@@ -469,7 +469,7 @@ components:
     NetConfig:
       example:
         tap: tap
-        iommu: false
+        iommu: true
         ip: ip
         mac: mac
         mask: mask
@@ -483,12 +483,7 @@ components:
         mac:
           type: string
         iommu:
-          default: false
           type: boolean
-      required:
-      - ip
-      - mac
-      - mask
       type: object
     RngConfig:
       example:

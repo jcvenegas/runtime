@@ -279,10 +279,6 @@ components:
           default: false
 
     NetConfig:
-      required:
-      - ip
-      - mask
-      - mac
       type: object
       properties:
         tap:
@@ -295,7 +291,6 @@ components:
           type: string
         iommu:
           type: boolean
-          default: false
 
     RngConfig:
       required:
