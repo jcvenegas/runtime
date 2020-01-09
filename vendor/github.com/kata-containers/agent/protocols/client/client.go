@@ -7,21 +7,22 @@
 package client
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/hashicorp/yamux"
 	"github.com/mdlayher/vsock"
 	opentracing "github.com/opentracing/opentracing-go"
-	"golang.org/x/sys/unix"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
@@ -39,6 +40,14 @@ var defaultDialTimeout = 15 * time.Second
 var defaultCloseTimeout = 5 * time.Second
 
 var hybridVSockPort uint32
+
+var agentClientFields = logrus.Fields{
+	"name":   "agent-client",
+	"pid":    os.Getpid(),
+	"source": "agent-client",
+}
+
+var agentClientLog = logrus.WithFields(agentClientFields)
 
 // AgentClient is an agent gRPC client connection wrapper for agentgrpc.AgentServiceClient
 type AgentClient struct {
@@ -410,25 +419,20 @@ func HybridVSockDialer(sock string, timeout time.Duration) (net.Conn, error) {
 			return nil, err
 		}
 
-		// Receive the packet from the connection without removing it from
-		// the receive queue (MSG_PEEK), ensuring the connection is usable.
-		if uc, ok := conn.(*net.UnixConn); ok {
-			file, err := uc.File()
-			if err != nil {
-				conn.Close()
-				return nil, err
-			}
-			eot := make([]byte, 1)
-			n, _, err := unix.Recvfrom(int(file.Fd()), eot, syscall.MSG_PEEK)
-			file.Close()
-			if err != nil || n == 0 {
-				conn.Close()
-				if err == nil {
-					err = io.EOF
-				}
-				return nil, err
-			}
+		// A trivial handshake is included in the host-initiated vsock connection protocol.
+		// It looks like this:
+		// - [host] CONNECT <port><LF>
+		// - [guest/success] OK <assigned_host_port><LF>
+		reader := bufio.NewReader(conn)
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			conn.Close()
+			return nil, err
+		} else if !strings.Contains(response, "OK") {
+			conn.Close()
+			return nil, errors.New("malformed response code")
 		}
+		agentClientLog.WithField("response", response).Debug("HybridVsock trivial handshake")
 
 		return conn, nil
 	}
