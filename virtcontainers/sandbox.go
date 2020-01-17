@@ -1078,9 +1078,11 @@ func (s *Sandbox) startVM() (err error) {
 	// we want to guarantee that it is manageable.
 	// For that we need to ask the agent to start the
 	// sandbox inside the VM.
+	s.Logger().Warn("DEBUG: About to start agent sandbox")
 	if err := s.agent.startSandbox(s); err != nil {
 		return err
 	}
+	s.Logger().Warn("DEBUG: agent sandbox started")
 
 	s.Logger().Info("Agent started in the sandbox")
 

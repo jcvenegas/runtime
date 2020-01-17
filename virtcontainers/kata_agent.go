@@ -1717,6 +1717,7 @@ func (k *kataAgent) connect() error {
 	client, err := kataclient.NewAgentClient(k.ctx, k.state.URL, k.proxyBuiltIn)
 	if err != nil {
 		k.dead = true
+		k.Logger().Warnf("DEBUG: ERROR: %s", err)
 		return err
 	}
 

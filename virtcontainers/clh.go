@@ -120,15 +120,18 @@ var clhKernelParams = []Param{
 	{"panic", "1"},         // upon kernel panic wait 1 second before reboot
 	{"no_timer_check", ""}, // do not check broken timer IRQ resources
 	{"noreplace-smp", ""},  // do not replace SMP instructions
+	{"quiet", ""},
+	{"systemd.show_status", "0"},
 	{"agent.log_vport", fmt.Sprintf("%d", vSockLogsPort)}, // tell the agent where to send the logs
 }
 
 var clhDebugKernelParams = []Param{
 
-	{"console", "ttyS0,115200n8"},     // enable serial console
-	{"systemd.log_level", "debug"},    // enable systemd debug output
-	{"systemd.log_target", "console"}, // send loggng to the console
-	{"initcall_debug", "1"},           // print init call timing information to the console
+	{"console", "ttyS0,115200n8"}, // enable serial console
+	{"agent.log", "debug"},
+	//{"systemd.log_level", "debug"},    // enable systemd debug output
+	//{"systemd.log_target", "console"}, // send loggng to the console
+	//{"initcall_debug", "1"},           // print init call timing information to the console
 }
 
 //###########################################################
@@ -226,6 +229,7 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 	params := clhKernelParams
 
 	// Followed by extra debug parameters if debug enabled in configuration file
+	clh.config.Debug = true
 	if clh.config.Debug {
 		params = append(params, clhDebugKernelParams...)
 	}
@@ -271,6 +275,8 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 			Mode: cctOFF,
 		}
 	}
+
+	clh.vmconfig.Serial.File = "/tmp/serial-clh.log"
 
 	clh.vmconfig.Console = chclient.ConsoleConfig{
 		Mode: cctOFF,
