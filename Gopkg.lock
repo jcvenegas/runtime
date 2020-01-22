@@ -419,7 +419,8 @@
   revision = "8cba5a8e5f2816f26f9dc34b8ea968279a5a76eb"
 
 [[projects]]
-  digest = "1:6da9487ef0cc0cca3eeb1a24e3bb018ce2e07b7c2fc4d50975b54efdcc942118"
+  branch = "revert_ch"
+  digest = "1:903bfb87f41dc18a533d327b5b03fd2f562f34deafcbd0db93d4be3fa8d6099c"
   name = "github.com/kata-containers/agent"
   packages = [
     "pkg/types",
@@ -427,7 +428,8 @@
     "protocols/grpc",
   ]
   pruneopts = "NUT"
-  revision = "1b3628c43660cb198ec055d78e5c7b03809cba60"
+  revision = "3d3af81c92f4a6fccc457ce9654ec41a68a2af46"
+  source = "github.com/sboeuf/agent"
 
 [[projects]]
   digest = "1:58999a98719fddbac6303cb17e8d85b945f60b72f48e3a2df6b950b97fa926f1"
