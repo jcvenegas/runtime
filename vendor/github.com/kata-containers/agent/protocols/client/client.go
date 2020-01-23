@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/yamux"
 	"github.com/mdlayher/vsock"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
@@ -383,14 +384,18 @@ func vsockDialer(sock string, timeout time.Duration) (net.Conn, error) {
 
 // HybridVSockDialer dials to a hybrid virtio socket
 func HybridVSockDialer(sock string, timeout time.Duration) (net.Conn, error) {
+	clog.Info("DEBUG: Dialer")
 	udsPath, port, err := parseGrpcHybridVSockAddr(sock)
 	if err != nil {
 		return nil, err
 	}
 
 	dialFunc := func() (net.Conn, error) {
+		clog.Info("DEBUG: Dialer timeout ", timeout)
 		conn, err := net.DialTimeout("unix", udsPath, timeout)
+		clog.Info("DEBUG: Dial worked")
 		if err != nil {
+			clog.Info("DEBUG: failed to dial ", err)
 			return nil, err
 		}
 
@@ -402,22 +407,37 @@ func HybridVSockDialer(sock string, timeout time.Duration) (net.Conn, error) {
 		// Once the connection is opened, the following command MUST BE sent,
 		// the hypervisor needs to know the port number where the agent is listening in order to
 		// create the connection
+		clog.Info("DEBUG: about to write")
 		if _, err = conn.Write([]byte(fmt.Sprintf("CONNECT %d\n", port))); err != nil {
+			clog.Info("DEBUG: failed to write", err)
 			conn.Close()
 			return nil, err
 		}
+		clog.Info("DEBUG: write is done")
 
 		// Read EOT (End of transmission) byte
+		clog.Info("DEBUG: about to read")
 		eot := make([]byte, 32)
 		if _, err = conn.Read(eot); err != nil {
+			clog.Info("DEBUG: failed to read, close but not error", err)
 			// Just close the connection, gRPC will dial again
 			// without errors
 			conn.Close()
 		}
+		clog.Info("DEBUG: read is done")
 
 		return conn, nil
 	}
 
 	timeoutErr := grpcStatus.Errorf(codes.DeadlineExceeded, "timed out connecting to hybrid vsocket %s", sock)
 	return commonDialer(timeout, dialFunc, timeoutErr)
+}
+
+var clog = logrus.WithFields(logrus.Fields{
+	"source": "agent-client",
+})
+
+func SetLogger(ctx context.Context, logger *logrus.Entry) {
+	fields := clog.Data
+	clog = logger.WithFields(fields)
 }

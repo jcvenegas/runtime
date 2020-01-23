@@ -17,6 +17,7 @@ import (
 	"strings"
 	"syscall"
 
+	kataclient "github.com/kata-containers/agent/protocols/client"
 	"github.com/kata-containers/runtime/pkg/katautils"
 	"github.com/kata-containers/runtime/pkg/rootless"
 	"github.com/kata-containers/runtime/pkg/signals"
@@ -247,6 +248,7 @@ func setExternalLoggers(ctx context.Context, logger *logrus.Entry) {
 
 	// Set the rootless package logger
 	rootless.SetLogger(ctx, logger)
+	kataclient.SetLogger(ctx, logger)
 }
 
 // beforeSubcommands is the function to perform preliminary checks
