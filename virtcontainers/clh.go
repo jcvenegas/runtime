@@ -124,10 +124,13 @@ var clhKernelParams = []Param{
 
 var clhDebugKernelParams = []Param{
 
-	{"console", "ttyS0,115200n8"},     // enable serial console
-	{"systemd.log_level", "debug"},    // enable systemd debug output
-	{"systemd.log_target", "console"}, // send loggng to the console
-	{"initcall_debug", "1"},           // print init call timing information to the console
+	{"console", "ttyS0,115200n8"}, // enable serial console
+	//{"systemd.log_level", "debug"},    // enable systemd debug output
+	//{"systemd.log_target", "console"}, // send loggng to the console
+	//{"initcall_debug", "1"},           // print init call timing information to the console
+	{"systemd.show_status", "0"},
+	{"agent.log", "info"},
+	{"quiet", ""},
 }
 
 //###########################################################
@@ -223,9 +226,7 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 	params := clhKernelParams
 
 	// Followed by extra debug parameters if debug enabled in configuration file
-	if clh.config.Debug {
-		params = append(params, clhDebugKernelParams...)
-	}
+	params = append(params, clhDebugKernelParams...)
 
 	// Followed by extra debug parameters defined in the configuration file
 	params = append(params, clh.config.KernelParams...)
@@ -267,6 +268,11 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 		clh.vmconfig.Serial = chclient.ConsoleConfig{
 			Mode: cctNULL,
 		}
+	}
+
+	clh.vmconfig.Serial = chclient.ConsoleConfig{
+		Mode: cctFILE,
+		File: "/tmp/clh-serial",
 	}
 
 	clh.vmconfig.Console = chclient.ConsoleConfig{
