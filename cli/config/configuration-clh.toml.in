@@ -12,8 +12,8 @@
 
 [hypervisor.clh]
 path = "@CLHPATH@"
-kernel = "@KERNELPATH_CLH@"
-image = "@IMAGEPATH@"
+kernel = "/kata/vmlinux-virtio-fs-v0.3-65"
+image = "/kata/kata-containers-clearlinux-32270-osbuilder-7526f49-agent-36b37f6.img"
 
 # Optional space-separated list of options to pass to the guest kernel.
 # For example, use `kernel_params = "vsyscall=emulate"` if you are having
