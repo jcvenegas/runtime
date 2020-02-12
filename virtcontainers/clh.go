@@ -124,12 +124,12 @@ var clhKernelParams = []Param{
 
 var clhDebugKernelParams = []Param{
 
-	{"console", "ttyS0,115200n8"}, // enable serial console
+	{"console", "hvc0"}, // enable serial console
 	//{"systemd.log_level", "debug"},    // enable systemd debug output
 	//{"systemd.log_target", "console"}, // send loggng to the console
 	//{"initcall_debug", "1"},           // print init call timing information to the console
 	{"systemd.show_status", "0"},
-	{"agent.log", "info"},
+	{"agent.log", "warn"},
 	{"quiet", ""},
 }
 
@@ -270,15 +270,15 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 		}
 	}
 
-	clh.vmconfig.Serial = chclient.ConsoleConfig{
+	clh.vmconfig.Console = chclient.ConsoleConfig{
 		Mode: cctFILE,
 		File: "/tmp/clh-serial",
 	}
 
-	clh.vmconfig.Console = chclient.ConsoleConfig{
-		Mode: cctOFF,
-	}
-
+	//	clh.vmconfig.Console = chclient.ConsoleConfig{
+	//		Mode: cctOFF,
+	//	}
+	//
 	// Overwrite the default value of HTTP API socket path for cloud hypervisor
 	apiSocketPath, err := clh.apiSocketPath(id)
 	if err != nil {
