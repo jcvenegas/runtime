@@ -128,20 +128,16 @@ type cloudHypervisor struct {
 var clhKernelParams = []Param{
 
 	{"root", "/dev/pmem0p1"},
-	{"panic", "1"},         // upon kernel panic wait 1 second before reboot
+	{"panic", "1"},         // upon kernel panic wait 1 second before reboot // no reboot?
 	{"no_timer_check", ""}, // do not check broken timer IRQ resources
 	{"noreplace-smp", ""},  // do not replace SMP instructions
-	{"agent.log_vport", fmt.Sprintf("%d", vSockLogsPort)}, // tell the agent where to send the logs
-	{"rootflags", "data=ordered,errors=remount-ro ro"},    // mount the root filesystem as readonly
+	{"rootflags", "data=ordered,errors=remount-ro ro"}, // mount the root filesystem as readonly
 	{"rootfstype", "ext4"},
 }
 
 var clhDebugKernelParams = []Param{
-
 	{"console", "ttyS0,115200n8"},     // enable serial console
-	{"systemd.log_level", "debug"},    // enable systemd debug output
 	{"systemd.log_target", "console"}, // send loggng to the console
-	{"initcall_debug", "1"},           // print init call timing information to the console
 }
 
 //###########################################################
@@ -252,7 +248,7 @@ func (clh *cloudHypervisor) createSandbox(ctx context.Context, id string, networ
 	}
 
 	// Followed by extra debug parameters defined in the configuration file
-	params = append(params, clh.config.KernelParams...)
+	//params = append(params, clh.config.KernelParams...)
 
 	clh.vmconfig.Cmdline.Args = kernelParamsToString(params)
 
